@@ -1,2 +1,2 @@
 html/* linguist-vendored
-*.rb linguist-language=Processing
+*.* linguist-language=Processing

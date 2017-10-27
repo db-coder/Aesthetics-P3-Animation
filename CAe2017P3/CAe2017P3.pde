@@ -81,7 +81,7 @@ void draw()             // loops forever
   showGUI(); // shows mouse location and key pressed
   if(snapPic) {endRecord(); snapPic=false;} // end saving a .pdf of the screen
   if(filming && (animating || change)) saveFrame("FRAMES/F"+nf(frameCounter++,4)+".tif"); // saves a movie frame 
-  if(animating) {t+=0.01; if(t>=1) {t=1; animating=false;}} // increments timing and stops when animation is complete
+  if(animating) {if(emotion=="lazy") t+=0.003; else t+=0.01; if(t>=1) {t=1; animating=false;}} // increments timing and stops when animation is complete
   change=false; // reset to avoid rendering movie frames for which nothing changes
   }
 
@@ -208,6 +208,10 @@ void computeParametersForAnimationTime(float t) // computes parameters x, y, r, 
   }
   else if(emotion == "lazy")
   {
+    cx = x0 + t*(x1-x0);
+    cy = y0 - r0;
+    x = cx + r0*sin(10*PI*t);
+    y = cy + r0*cos(10*PI*t);
   }
   }
   

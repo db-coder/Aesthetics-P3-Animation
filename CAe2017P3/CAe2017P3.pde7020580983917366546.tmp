@@ -17,7 +17,6 @@ float b0 = 100, d0 = 130;   // initial & final values of the width of bottom of 
 float b = b0, d = d0;     // current values of the width of bottom of dress (on both sides of x)
 float _p = b0, _q = d0;     // global values of the radii of the left and right arcs of the dress (user edited)
 float cx, cy;
-String emotion = "excited";
 
 // Animation
 boolean animating = false; // animation status: running/stopped
@@ -52,16 +51,7 @@ void draw()             // loops forever
   stroke(0);            // change drawing color to black
   line(0, g, width, g); // draws gound
   noStroke(); 
-  if(showControlFrames) 
-  {
-    fill(0,255,255); 
-    paintShape(x0,y0,r0,b0,d0); 
-    fill(255,0,255); 
-    if(emotion == "sad") 
-      paintShape(x1,y0-r0,r0,2.5*b0,d0);
-    else
-      paintShape(x1,y0,r0,b0,d0);
-  }
+  if(showControlFrames) {fill(0,255,255); paintShape(x0,y0,r0,b0,d0); fill(255,0,255); paintShape(x1,y0,r0,b0,d0);}
   if(showStrobeFrames) 
     {
     float xx=x, yy=y, rr=r, bb=b, dd=d;
@@ -94,9 +84,6 @@ void keyPressed()
   if(key=='c') showConstruction=!showConstruction;
   if(key=='s') showStrobeFrames=!showStrobeFrames;
   if(key=='a') {animating=true; t=0;}  // start animation
-  if(key=='1') {emotion = "excited";}  // excited
-  if(key=='2') {emotion = "sad";}  // sad
-  if(key=='3') {emotion = "lazy";}  // lazy
   change=true; // reset to render movie frames for which something changes
   }
   
@@ -190,25 +177,15 @@ void showGUI()
 // that conveys a specific emotion/enthusiasm of the moving shape
 void computeParametersForAnimationTime(float t) // computes parameters x, y, r, b, d for current t value
   {
-  if(emotion == "excited")
-  {
-    //center of (locus of center)
-    cx = x0 + t*(x1-x0);
-    cy = y0 - r0;
-    x = cx + r0*sin(8*PI*t);
-    y = cy + r0*cos(8*PI*t);
-    //b = b0 + b0*0.8*sqrt(sin(PI*t));
-    //d = d0 - d0*0.4*sqrt(sin(PI*t));
-  }
-  else if(emotion == "sad")
-  {
-    x = x0 + t*(x1-x0);
-    y = y0 - r0*sin(PI*t/2);
-    b = b0 + 1.5*t*b0;
-  }
-  else if(emotion == "lazy")
-  {
-  }
+  // happy emotion curve
+  
+  //center of (locus of center)
+  cx = x0 + t*(x1-x0);
+  cy = y0 - r0;
+  x = cx + r0*sin(6*PI*t);
+  y = cy + r0*cos(6*PI*t);
+  //b = b0 + b0*0.8*sqrt(sin(PI*t));
+  //d = d0 - d0*0.4*sqrt(sin(PI*t));
   }
   
 //*********** TO BE PROVIDED BY STUDENTS  

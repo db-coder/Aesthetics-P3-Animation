@@ -16,8 +16,11 @@ float r = r0;             // current disk radius
 float b0 = 100, d0 = 130;   // initial & final values of the width of bottom of dress (on both sides of x)
 float b = b0, d = d0;     // current values of the width of bottom of dress (on both sides of x)
 float _p = b0, _q = d0;     // global values of the radii of the left and right arcs of the dress (user edited)
-float cx, cy;
+float cx=0, cy=0;
 String emotion = "excited";
+float lscale = 1.0, rscale = 1.0;        //scaling in the x direction
+float v=0,v0=0;          //velocity along x
+float timeStep=0.01;
 
 // Animation
 boolean animating = false; // animation status: running/stopped
@@ -81,7 +84,7 @@ void draw()             // loops forever
   showGUI(); // shows mouse location and key pressed
   if(snapPic) {endRecord(); snapPic=false;} // end saving a .pdf of the screen
   if(filming && (animating || change)) saveFrame("FRAMES/F"+nf(frameCounter++,4)+".tif"); // saves a movie frame 
-  if(animating) {if(emotion=="lazy") t+=0.003; else t+=0.01; if(t>=1) {t=1; animating=false;}} // increments timing and stops when animation is complete
+  if(animating) {if(emotion=="lazy") {if (t < 0.25 || t > 0.75) timeStep=0.004; else timeStep=0.002;} else timeStep=0.01; t+=timeStep; if(t>=1) {t=1; animating=false;}} // increments timing and stops when animation is complete
   change=false; // reset to avoid rendering movie frames for which nothing changes
   }
 
@@ -129,24 +132,37 @@ void paintShape(float x, float y, float r, float b, float d)
     // sampling the left arc
     float u0=-PI/2, u1 = atan2(y-p,b); 
     float du = (u1-u0)/(n-1);
+    float v0=-PI/2, v1 = atan2(y-q,d); 
+    float dv = (v1-v0)/(n-1),xarc;
+    
     for (int i=0; i<n; i++) // loop to sample let arc
       {
       float s=u0+du*i;
-      vertex(x-b+p*cos(s),g-p-p*sin(s)); 
+      xarc = x-b+p*cos(s);
+      vertex(x + (xarc-x)*lscale,g-p-p*sin(s));
       }
+    
+    
+    for (float i=u1;i<v1+2*PI;i+=(v1+2*PI-u1)/n)
+    {
+      xarc = x+r*cos(i);
+      if (x<xarc)
+        vertex(x+ (xarc-x)*rscale,g-y+r*sin(i));
+      else
+        vertex(x+ (xarc-x)*lscale,g-y+r*sin(i));
+    }
 
     // sampling the right arc
-    float v0=-PI/2, v1 = atan2(y-q,d); 
-    float dv = (v1-v0)/(n-1);
     for (int i=n-1; i>=0; i--) // loop to sample let arc
       {
       float s=v0+dv*i;
-      vertex(x+d-q*cos(s),g-q-q*sin(s));
+      xarc = x+d-q*cos(s);
+      vertex(x+(xarc-x)*rscale,g-q-q*sin(s));
       }
 
   endShape(CLOSE);  // Closes the shape 
   
-  ellipse(x,g-y,r*2,r*2);  // draw disk
+  //ellipse(x,g-y,r*2,2*r);  // draw disk
   }
 
 // shows construction lines for shape defined by the 5 parameters (and by _p and _q when these are not to be recomputed automatically
@@ -190,34 +206,68 @@ void showGUI()
 // that conveys a specific emotion/enthusiasm of the moving shape
 void computeParametersForAnimationTime(float t) // computes parameters x, y, r, b, d for current t value
   {
-  if(emotion == "excited")
+    float xold = x-cx,xscale=0;
+  if (t > 0.25)
   {
-    //center of (locus of center)
-    cx = x0 + t*(x1-x0);
-    cy = y0 - r0;
-    x = cx + r0*sin(8*PI*t);
-    y = cy + r0*cos(8*PI*t);
-    b = b0;
-    d = d0;
-    //b = b0 + b0*0.8*sqrt(sin(PI*t));
-    //d = d0 - d0*0.4*sqrt(sin(PI*t));
+    float t1 = (t-0.25)/0.5;
+    if(emotion == "excited")
+    {
+      //center of (locus of center)
+      cx = x0 + t1*(x1-x0);
+      cy = y0 - r0;
+      x = cx + r0*sin(8*PI*t1);
+      y = cy + r0*cos(8*PI*t1);
+      b = b0;
+      d = d0;
+      //b = b0 + b0*0.8*sqrt(sin(PI*t));
+      //d = d0 - d0*0.4*sqrt(sin(PI*t));
+    }
+    else if(emotion == "sad")
+    {
+      x = x0 + t1*(x1-x0);
+      y = y0 - r0*sin(PI*t1/2);
+      b = b0 + 1.5*t1*b0;
+      d = d0;
+    }
+    else if(emotion == "lazy")
+    {
+      cx = x0 + t1*(x1-x0);
+      cy = y0 - r0/2;
+      x = cx + r0*sin(10*PI*t1);
+      y = cy + r0/2*cos(10*PI*t1);
+      b = b0;
+      d = d0;
+    }
   }
-  else if(emotion == "sad")
+  
+  if (t < 0.25)
   {
-    x = x0 + t*(x1-x0);
-    y = y0 - r0*sin(PI*t/2);
-    b = b0 + 1.5*t*b0;
-    d = d0;
+    b=b0;
+    d=d0;
+    y=y0;
+    x = LERP(0,LERP(0,x0,0.125,x0-40,t),0.25,LERP(0.125,x0-40,0.25,x0,t),t);
   }
-  else if(emotion == "lazy")
+  else if (t > 0.75)
   {
-    cx = x0 + t*(x1-x0);
-    cy = y0 - r0;
-    x = cx + r0*sin(10*PI*t);
-    y = cy + r0*cos(10*PI*t);
-    b = b0;
-    d = d0;
+    b=b0;
+    d=d0;
+    y=y0;
+    x = LERP(0.75,LERP(0.75,x1,0.87,x1+40,t),1,LERP(0.87,x1+40,1,x1,t),t);
   }
+  else
+  {
+    xscale = 1;
+  }
+  v = (x-cx-xold);
+  xscale = 1-abs(v)/13;
+  if (emotion!="lazy" && t > 0.25 && t < 0.75) xscale = 1;
+  lscale = v<0?xscale:1;
+  rscale=v>0?xscale:1;
+}
+  
+  float LERP(float x1, float y1, float x2, float y2, float t)
+  {
+    return y1 + (y2-y1)*(t-x1)/(x2-x1);
   }
   
 //*********** TO BE PROVIDED BY STUDENTS  

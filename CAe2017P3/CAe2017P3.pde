@@ -197,6 +197,8 @@ void computeParametersForAnimationTime(float t) // computes parameters x, y, r, 
     cy = y0 - r0;
     x = cx + r0*sin(8*PI*t);
     y = cy + r0*cos(8*PI*t);
+    b = b0;
+    d = d0;
     //b = b0 + b0*0.8*sqrt(sin(PI*t));
     //d = d0 - d0*0.4*sqrt(sin(PI*t));
   }
@@ -205,6 +207,7 @@ void computeParametersForAnimationTime(float t) // computes parameters x, y, r, 
     x = x0 + t*(x1-x0);
     y = y0 - r0*sin(PI*t/2);
     b = b0 + 1.5*t*b0;
+    d = d0;
   }
   else if(emotion == "lazy")
   {
@@ -212,6 +215,8 @@ void computeParametersForAnimationTime(float t) // computes parameters x, y, r, 
     cy = y0 - r0;
     x = cx + r0*sin(10*PI*t);
     y = cy + r0*cos(10*PI*t);
+    b = b0;
+    d = d0;
   }
   }
   

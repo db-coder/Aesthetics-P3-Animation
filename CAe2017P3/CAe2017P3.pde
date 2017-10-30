@@ -102,7 +102,8 @@ void draw()             // loops forever
   if(showConstruction) {noFill(); showConstruction(x,y,r,b,d);} // displays blend construction lines and circles
   showGUI(); // shows mouse location and key pressed
   textSize(20);
-  text("Frame number : " + currFrame + " / " + numFrames, 10, 30); 
+  text("Frame number: " + currFrame + " / " + numFrames, 10, 30); 
+  text("Emotion: " + emotion, 800, 30); 
   if(snapPic) {endRecord(); snapPic=false;} // end saving a .pdf of the screen
   if(filming && (animating || change)) saveFrame("FRAMES/F"+nf(frameCounter++,4)+".tif"); // saves a movie frame 
   if(animating) {

@@ -114,7 +114,7 @@ void draw()             // loops forever
       if (i==pickedkf) { fill(0,0,0,50); ellipse(kf[i].x,kf[i].y,4,4); noStroke(); paintShape(kf[i]); noStroke();}
     }
   }
-  if (animating || !keyFrames) {fill(0); paintShape(x,y,r,b,d); /* displays current shape*/  }
+  if (true) {fill(0); paintShape(x,y,r,b,d); /* displays current shape*/  }
   if(showConstruction) {noFill(); showConstruction(x,y,r,b,d);} // displays blend construction lines and circles
   showGUI(); // shows mouse location and key pressed
   textSize(20);
@@ -148,6 +148,7 @@ void keyPressed()
   if(key=='c') showConstruction=!showConstruction;
   if(key=='s') showStrobeFrames=!showStrobeFrames;
   if(key=='k') keyFrames=!keyFrames;
+  if(key=='z') animating=!animating;
   if(key=='i') {if(keyFrames) {insertFrameAt(kf, int((float)numFrames*(mouseX-x0)/(x1-x0)));} }
   if(key=='a') {animating=true; t=0; currFrame=0;}  // start animation
   if(key=='1') {emotion = "excited"; excitedSlider.curr=1; sadSlider.curr=0;lazySlider.curr=0;}  // excited
@@ -412,6 +413,8 @@ void computeParametersForAnimationTime(float t) // computes parameters x, y, r, 
         r = LERP(kf[i].r,kf[i+1].r,param);
         d = LERP(kf[i].d,kf[i+1].d,param);
         b = LERP(kf[i].b,kf[i+1].b,param);
+        lscale = 1;
+        rscale = 1;
       }
     }
   }
@@ -493,5 +496,5 @@ void insertFrameAt(keyframe[] kf, int f)
 keyframe interpolate(keyframe k1, keyframe k2, int f)
 {
   float t = (float)(f-k1.pos)/(float)(k2.pos-k1.pos);
-  return K(f, LERP(k1.x,k2.x,t), LERP(k1.y,k2.y,t), LERP(k1.d,k2.d,t), LERP(k1.b,k2.b,t), LERP(k1.r,k2.r,t), LERP(k1.lscale,k2.lscale,t), LERP(k1.rscale,k2.rscale,t));
+  return K(f, LERP(k1.x,k2.x,t), LERP(k1.y,k2.y,t), LERP(k1.d,k2.d,t), LERP(k1.b,k2.b,t), LERP(k1.r,k2.r,t), 1, 1);
 }

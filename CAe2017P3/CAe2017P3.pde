@@ -2,7 +2,7 @@
 
 // variables to control display
 boolean showConstruction=false; // show construction edges and circles
-boolean showControlFrames=true;  // show start and end poses
+boolean showControlFrames=false;  // show start and end poses
 boolean showStrobeFrames=false; // shows 5 frames of animation
 boolean computingBlendRadii=true; // toggles whether blend radii are computed or adjusted with mouse ('b' or 'd' with vertical mouse moves)
 boolean keyFrames=false;
@@ -28,6 +28,8 @@ int maxkf=100,numkf=2;
 keyframe[] kf = new keyframe[maxkf];
 float kfx=x0, kfy=y0, kfd=d0, kfb=b0, kfr=r0, kfls=1, kfrs=1, kfxv=0, kfyv=0;
 int pickedkf=1;
+
+slider excitedSlider = new slider(), sadSlider = new slider(), lazySlider = new slider();
 
 // Animation
 boolean animating = false; // animation status: running/stopped
@@ -55,6 +57,10 @@ void setup()              // run once
     kf[0] = K(0,x0,y0,d0,b0,r0);
     kf[1] = K(numFrames,x1,y0,d0,b0,r0);
     numkf = 2;
+    excitedSlider.set(0,1,600,20,200,"Excited");
+    excitedSlider.curr = 1.0;
+    sadSlider.set(0,1,600,60,200,"Sad");
+    lazySlider.set(0,1,600,100,200,"Lazy");
   }
  
 void draw()             // loops forever
@@ -65,6 +71,11 @@ void draw()             // loops forever
   stroke(0);            // change drawing color to black
   line(0, g, width, g); // draws gound
   noStroke(); 
+  if (!keyFrames) {
+    excitedSlider.draw();
+    sadSlider.draw();
+    lazySlider.draw();
+  }
   if(showControlFrames) 
   {
     fill(0,255,255); 
@@ -91,25 +102,34 @@ void draw()             // loops forever
   }
   if(keyFrames)
   {
+    if(mouseX>x0&&mouseX<x1)
+    {
+    fill(255,0,0);
+    rect(mouseX,0,5,400);
+    }
     for(int i=0; i<numkf; i++)
     {
       fill(255-(200.*i)/numkf,(200.*i)/numkf,155);
       paintShape(kf[i]);
-      if (i==pickedkf) { fill(0,0,0,50); stroke(0); paintShape(kf[i]); noStroke();}
+      if (i==pickedkf) { fill(0,0,0,50); ellipse(kf[i].x,kf[i].y,4,4); noStroke(); paintShape(kf[i]); noStroke();}
     }
   }
-  fill(0); paintShape(x,y,r,b,d); // displays current shape
+  if (animating || !keyFrames) {fill(0); paintShape(x,y,r,b,d); /* displays current shape*/  }
   if(showConstruction) {noFill(); showConstruction(x,y,r,b,d);} // displays blend construction lines and circles
   showGUI(); // shows mouse location and key pressed
   textSize(20);
-  text("Frame number: " + currFrame + " / " + numFrames, 10, 30); 
-  text("Emotion: " + emotion, 800, 30); 
+  fill(0);
+  //text("Emotion: " + emotion, 10, 60); 
+  if (keyFrames && !animating) {text("Keyframe Interpolation: ", 10, 30); text("Inserting new frame at  " + currFrame + " / " + numFrames, 10, 60); }
+  else if (keyFrames) {text("Keyframe Interpolation: ", 10, 30); text("Frame : " + currFrame + " / " + numFrames, 10, 60);}
+  else {/*text("Emotion: " + emotion, 10, 60);*/ text("Frame : " + currFrame + " / " + numFrames, 10, 30);}
   if(snapPic) {endRecord(); snapPic=false;} // end saving a .pdf of the screen
   if(filming && (animating || change)) saveFrame("FRAMES/F"+nf(frameCounter++,4)+".tif"); // saves a movie frame 
   if(animating) {
     if (!keyFrames) 
     {
-      if(emotion=="lazy") {if (t < 0.25 || t > 0.75) timeStep=0.005; else timeStep=0.0025;} else timeStep=0.01; t+=timeStep; currFrame++; if(t>=1) {t=1; animating=false;}
+      if(t<0.25 || t>0.75) {timeStep = LERP(0.01,excitedSlider.curr, 0.01,sadSlider.curr, 0.005, lazySlider.curr);} else {timeStep = LERP(0.01,excitedSlider.curr, 0.01,sadSlider.curr, 0.0025, lazySlider.curr);}
+      t+=timeStep; currFrame++; if(t>=1) {t=1; animating=false;}
     }
     else
     {
@@ -128,11 +148,11 @@ void keyPressed()
   if(key=='c') showConstruction=!showConstruction;
   if(key=='s') showStrobeFrames=!showStrobeFrames;
   if(key=='k') keyFrames=!keyFrames;
-  if(key=='i') {if(keyFrames) {insertFrameAt(kf, currFrame);} }
+  if(key=='i') {if(keyFrames) {insertFrameAt(kf, int((float)numFrames*(mouseX-x0)/(x1-x0)));} }
   if(key=='a') {animating=true; t=0; currFrame=0;}  // start animation
-  if(key=='1') {emotion = "excited";}  // excited
-  if(key=='2') {emotion = "sad";}  // sad
-  if(key=='3') {emotion = "lazy";}  // lazy
+  if(key=='1') {emotion = "excited"; excitedSlider.curr=1; sadSlider.curr=0;lazySlider.curr=0;}  // excited
+  if(key=='2') {emotion = "sad"; excitedSlider.curr=0; sadSlider.curr=1;lazySlider.curr=0;}  // sad
+  if(key=='3') {emotion = "lazy"; excitedSlider.curr=0; sadSlider.curr=0;lazySlider.curr=1;}  // lazy
   change=true; // reset to render movie frames for which something changes
   }
   
@@ -164,6 +184,20 @@ void mouseDragged()
       if(key=='b') {kf[pickedkf].b-=mouseX-pmouseX;}
       if(key=='d') {kf[pickedkf].d+=mouseX-pmouseX;}
       if(key=='m') {currFrame+=int((mouseX-pmouseX)*(float)numFrames/(float)1000); currFrame=min(max(currFrame,0),numFrames);}
+    }
+  }
+  if (!keyFrames) {
+    if (excitedSlider.isInside(mouseX,mouseY))
+    {
+      excitedSlider.curr += (mouseX-pmouseX)/excitedSlider.w;
+    }
+    if (sadSlider.isInside(mouseX,mouseY))
+    {
+      sadSlider.curr += (mouseX-pmouseX)/sadSlider.w;
+    }
+    if (lazySlider.isInside(mouseX,mouseY))
+    {
+      lazySlider.curr += (mouseX-pmouseX)/lazySlider.w;
     }
   }
 }
@@ -232,7 +266,6 @@ void paintShape(keyframe k)
     float du = (u1-u0)/(n-1);
     float v0=-PI/2, v1 = atan2(k.y-q1,k.d); 
     float dv = (v1-v0)/(n-1),xarc;
-    println("u1 is " + u1 + " and v1 is " + v1);
     for (int i=0; i<n; i++) // loop to sample let arc
     {
       float s=u0+du*i;
@@ -305,37 +338,44 @@ void computeParametersForAnimationTime(float t) // computes parameters x, y, r, 
   if (!keyFrames)
   {
     float xold = x-cx,xscale=0;
+    float xx,yy,dd,bb,rr;
+    keyframe excited, lazy, sad,net;
     if (t > 0.25 && t < 0.75)
     {
       float t1 = (t-0.25)/0.5;
-      if(emotion == "excited")
+      //if(emotion == "excited")
       {
         //center of (locus of center)
         cx = x0 + t1*(x1-x0);
         cy = y0 - r0;
-        x = cx + r0*sin(8*PI*t1);
-        y = cy + r0*cos(8*PI*t1);
-        b = b0;
-        d = d0;
+        xx = cx + r0*sin(8*PI*t1);
+        yy = cy + r0*cos(8*PI*t1);
+        bb = b0;
+        dd = d0;
         //b = b0 + b0*0.8*sqrt(sin(PI*t));
         //d = d0 - d0*0.4*sqrt(sin(PI*t));
+        excited = K(0,xx,yy,dd,bb,r0);
       }
-      else if(emotion == "sad")
+      //else if(emotion == "sad")
       {
-        x = x0 + t1*(x1-x0);
-        y = y0 - r0*sin(PI*t1/2);
-        b = b0 + 1.5*t1*b0;
-        d = d0;
+        xx = x0 + t1*(x1-x0);
+        yy = y0 - r0*sin(PI*t1/2);
+        bb = b0 + 1.5*t1*b0;
+        dd = d0;
+        sad = K(0,xx,yy,dd,bb,r0);
       }
-      else if(emotion == "lazy")
+      //else if(emotion == "lazy")
       {
         cx = x0 + t1*(x1-x0);
         cy = y0 - r0/2;
-        x = cx + r0*sin(10*PI*t1);
-        y = cy + r0/2*cos(10*PI*t1);
-        b = b0;
-        d = d0;
+        xx = cx + r0*sin(10*PI*t1);
+        yy = cy + r0/2*cos(10*PI*t1);
+        bb = b0;
+        dd = d0;
+        lazy = K(0,xx,yy,dd,bb,r0);
       }
+      net=LERP(excited,excitedSlider.curr,sad,sadSlider.curr,lazy,lazySlider.curr);
+      x=net.x; y=net.y; d=net.d; b=net.b; r=net.r;
     }
       
     if (t <= 0.25)
@@ -354,9 +394,9 @@ void computeParametersForAnimationTime(float t) // computes parameters x, y, r, 
       xscale = 1;
     }
     v = (x-cx-xold);
-    v = min(abs(v),7)*v/abs(v);
+    v = min(abs(v),5)*v/abs(v);
     xscale = 1-abs(v)/13;
-    if (emotion!="lazy" && t >= 0.25 && t <= 0.75) xscale = 1;
+    if (t >= 0.25 && t <= 0.75) {xscale = LERP(1,excitedSlider.curr,1,sadSlider.curr,xscale,lazySlider.curr);}
     lscale = v<0?xscale:1;
     rscale=v>0?xscale:1;
   }
@@ -387,6 +427,26 @@ float LERP(float y1, float y2, float t)
   return LERP(0,y1,1,y2,t);
 }
 
+float LERP(float x1, float t1, float x2, float t2, float x3, float t3)
+{
+  return (x1*t1+x2*t2+x3*t3)/(t1+t2+t3);
+}
+
+keyframe LERP(keyframe k1, float t1, keyframe k2, float t2, keyframe k3, float t3)
+{
+  keyframe K = new keyframe();
+  float tTot=t1+t2+t3;
+  t1 /= tTot; t2 /= tTot; t3 /= tTot;
+  K.x = LERP(k1.x,t1,k2.x,t2,k3.x,t3);
+  K.y = LERP(k1.y,t1,k2.y,t2,k3.y,t3);
+  K.d = LERP(k1.d,t1,k2.d,t2,k3.d,t3);
+  K.b = LERP(k1.b,t1,k2.b,t2,k3.b,t3);
+  K.r = LERP(k1.r,t1,k2.r,t2,k3.r,t3);
+  K.lscale = LERP(k1.lscale,t1,k2.lscale,t2,k3.lscale,t3);
+  K.rscale = LERP(k1.rscale,t1,k2.rscale,t2,k3.rscale,t3);
+  return K;
+}
+
 //*********** TO BE PROVIDED BY STUDENTS  
 // compute blend radius tangent to x-axis at point (0,0) and circle of center (b,y) and radius r   
 float blendRadius(float b, float y, float r) 
@@ -410,6 +470,7 @@ int pickClosestKeyframeX(keyframe[] kf, float x0)
 
 void insertFrameAt(keyframe[] kf, int f)
 {
+  println("inserted at " + f);
   int m = 0;
   for(int i=0; i<numkf;i++)
   {
@@ -419,7 +480,7 @@ void insertFrameAt(keyframe[] kf, int f)
       break;
     }
   }
-  keyframe k = interpolate(kf[m-1],kf[m],currFrame);
+  keyframe k = interpolate(kf[m-1],kf[m],f);
   for (int i=numkf;i>m;i--)
   {
     kf[i] = kf[i-1];
@@ -432,5 +493,5 @@ void insertFrameAt(keyframe[] kf, int f)
 keyframe interpolate(keyframe k1, keyframe k2, int f)
 {
   float t = (float)(f-k1.pos)/(float)(k2.pos-k1.pos);
-  return K(f, LERP(k1.x,k2.x,t), LERP(k1.y,k2.y,t), LERP(k1.d,k2.d,t), LERP(k1.b,k2.b,t), LERP(k1.r,k2.r,t));
+  return K(f, LERP(k1.x,k2.x,t), LERP(k1.y,k2.y,t), LERP(k1.d,k2.d,t), LERP(k1.b,k2.b,t), LERP(k1.r,k2.r,t), LERP(k1.lscale,k2.lscale,t), LERP(k1.rscale,k2.rscale,t));
 }
